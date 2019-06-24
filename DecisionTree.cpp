@@ -187,28 +187,34 @@ Node* GenerateTree (Group exemples, std::vector<int> parameters, int classIndex)
 		
 	Node* node = new Node;
 	
+	//Set the node's value (has a value only if it's group is pure)	
+	if (Entropy(exemples) == 0)
+	{
+		node->value = exemples[0][exemples[0].size() - 1];
+		std::cout << "Pure branch" << "\n";
+		return node;	
+	}	
+	else
+		node->value = "NoValue";
+	
 //Set the node's class	
 	if (classIndex >= 0)
 		node->classe = exemples[0][classIndex];
 	else
 		node->classe = "NoClass";
 		
-//Set the node's value (has a value only if it's group is pure)	
-	if (Entropy(exemples) == 0)
-	{
-		node->value = exemples[0][exemples[0].size() - 1];
-		return node;	
-	}		
-	else
-		node->value = "NoValue";
+	
+	
+		
 //Set the node's parameter
 	Children children = SelectBestParameter(exemples, parameters, &node->parameter);
 	std::cout << "\n- - - - -NOVA ENTRADA- - - - -\n";
 	PrintSplit(children, 6);
+	
 	std::cout << "Parametro: " << node->parameter << "\n";
 	for (int i = 0; i < children.size(); i++)
 	{
-		std::cout << "Entra em parametro " << node->parameter << " class " << children[i][0][node->parameter] << "\n";
+		std::cout << "\nEntra em parametro " << node->parameter << " class " << children[i][0][node->parameter] << "\n";
 		node->children[i] = GenerateTree (children[i], parameters, node->parameter);
 	}
 	
