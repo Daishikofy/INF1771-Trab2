@@ -15,7 +15,7 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
-#include <math.h>
+#include <cmath>
 #include "ReadDataBase.h"
 
 typedef struct instance
@@ -30,7 +30,7 @@ typedef std::vector<std::vector<std::string>> Group;
 float Entropy (Group leaf);
 Children Split (Group node, int parameter);
 void PrintSplit(Children split, int parameter);
-Children SelectBestParameter(Group node, std::vector<int>& parameters);
+Children SelectBestParameter(Group node, std::vector<int>& parameters, int* usedParameter);
 
 int main (void)
 {
@@ -50,9 +50,10 @@ int main (void)
 		std::cout << "El: " << a << " " << dataSet[i][3] << "\n";
 		a++;
 	}
-
-	Children children = SelectBestParameter(auxDebug, parameters);
+	int parameter;
+	Children children = SelectBestParameter(auxDebug, parameters, &parameter);
 	PrintSplit(children, 6);
+	std::cout << "Used parameter: " << parameter << "\n";
 
 	return 0;
 }
@@ -127,7 +128,7 @@ Children Split (Group node, int parameter)
 	return children;
 }
 
-Children SelectBestParameter(Group node, std::vector<int>& parameters)
+Children SelectBestParameter(Group node, std::vector<int>& parameters, int* usedParameter)
 {
 	//Para todos os parametros na lista fazer split
 	//Cacular a entropia de todos os filhos
@@ -160,7 +161,7 @@ Children SelectBestParameter(Group node, std::vector<int>& parameters)
 			bestEntropy = entropy;
 		}
 	}
-	std::cout << "P: " << bestParamIndex << "\n";
+	*usedParameter = parameters [bestParamIndex];
 	parameters.erase(parameters.begin() + bestParamIndex);
 	return bestChildren;
 }
