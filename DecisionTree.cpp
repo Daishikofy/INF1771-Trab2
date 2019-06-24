@@ -24,6 +24,15 @@ typedef struct instance
 	int number;
 }Instance;
 
+typedef struct node Node;
+struct node {
+	int parameter;
+	std::string classe;
+	std::string value;
+	
+	std::vector<Node*> children;
+};
+
 typedef std::vector<std::vector<std::vector<std::string>>> Children;
 typedef std::vector<std::vector<std::string>> Group;
 
@@ -31,6 +40,7 @@ float Entropy (Group leaf);
 Children Split (Group node, int parameter);
 void PrintSplit(Children split, int parameter);
 Children SelectBestParameter(Group node, std::vector<int>& parameters, int* usedParameter);
+Node* GenerateTree (Group exemples, std::vector<int> parameters, int classIndex);
 
 int main (void)
 {
@@ -50,10 +60,12 @@ int main (void)
 		std::cout << "El: " << a << " " << dataSet[i][3] << "\n";
 		a++;
 	}
-	int parameter;
+	/*int parameter;
 	Children children = SelectBestParameter(auxDebug, parameters, &parameter);
 	PrintSplit(children, 6);
 	std::cout << "Used parameter: " << parameter << "\n";
+	*/
+	Node* node = GenerateTree (auxDebug, parameters, -1);
 
 	return 0;
 }
@@ -164,6 +176,43 @@ Children SelectBestParameter(Group node, std::vector<int>& parameters, int* used
 	*usedParameter = parameters [bestParamIndex];
 	parameters.erase(parameters.begin() + bestParamIndex);
 	return bestChildren;
+}
+
+Node* GenerateTree (Group exemples, std::vector<int> parameters, int classIndex)
+{
+	if (exemples.size() == 0)
+		return nullptr;
+	else if (parameters.size() == 0)
+		return nullptr; //FIND SOMETHING BETTER
+		
+	Node* node = new Node;
+	
+//Set the node's class	
+	if (classIndex >= 0)
+		node->classe = exemples[0][classIndex];
+	else
+		node->classe = "NoClass";
+		
+//Set the node's value (has a value only if it's group is pure)	
+	if (Entropy(exemples) == 0)
+	{
+		node->value = exemples[0][exemples[0].size() - 1];
+		return node;	
+	}		
+	else
+		node->value = "NoValue";
+//Set the node's parameter
+	Children children = SelectBestParameter(exemples, parameters, &node->parameter);
+	std::cout << "\n- - - - -NOVA ENTRADA- - - - -\n";
+	PrintSplit(children, 6);
+	std::cout << "Parametro: " << node->parameter << "\n";
+	for (int i = 0; i < children.size(); i++)
+	{
+		std::cout << "Entra em parametro " << node->parameter << " class " << children[i][0][node->parameter] << "\n";
+		node->children[i] = GenerateTree (children[i], parameters, node->parameter);
+	}
+	
+	return node;
 }
 
 void PrintSplit(Children split, int parameter)
