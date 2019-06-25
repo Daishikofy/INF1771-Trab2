@@ -54,8 +54,6 @@ void CreateDataSet::ReadFile (std::string filePath)
 		_dataSet.push_back(example);
 		debug ++;
 	}
-
-	std::cout << _dataSet[3][5] << "\n";
 }
 
 void CreateDataSet::get(std::vector<std::vector<std::string>>& dataSet)
