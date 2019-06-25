@@ -64,5 +64,6 @@ private:
 	float Entropy (Group leaf);
 	Children Split (Group node, int parameter);
 	Children SelectBestParameter(Group node, std::vector<int>& parameters, int* usedParameter);
+	std::string DecisionTree::DominantClass(Group leaf);
 	void PrintSplit(Children split, int parameter);
 };

@@ -1,7 +1,6 @@
 #include <iostream>
 #include <sstream>
 #include <cmath>
-#include "ReadDataBase.h"
 #include "DecisionTree.h"
 
 typedef struct instance
@@ -17,33 +16,6 @@ struct node {
 	
 	std::vector<Node*> children;
 };
-
-int main (void)
-{
-	std::string filePath = "car-2.data";
-	Group dataSet, auxDebug;
-	CreateDataSet createDataSet;
-	std::vector<int> parameters;
-	for (int i = 0; i < 6; i++)
-		parameters.push_back(i);
-
-	createDataSet.ReadFile (filePath);
-	createDataSet.get(dataSet);
-	for (int i = dataSet.size() - 10; i < dataSet.size() ; i++)	
-		auxDebug.push_back(dataSet[i]);
-
-	DecisionTree decisionTree;
-	std::cout << "CREATE TREE\n\n";
-	Node* root = decisionTree.GenerateTree (auxDebug, parameters, -1);
-	std::cout << "\n\nEXPLORE TREE\n\n";
-	decisionTree.PrintTree(root);
-	std::cout << "\n\nTEST TREE\n\n";
-	std::vector<std::string> example = dataSet[dataSet.size() - 13];
-	std::string res = decisionTree.ClassifyExample(example,root);
-	std::cout << "Result: " << res << "\n";
-	return 0;
-}
-
 
 /********
 	Function : Generate Tree
@@ -63,40 +35,36 @@ Node* DecisionTree::GenerateTree (Group examples, std::vector<int> parameters, i
 {
 	if (examples.size() == 0)
 		return nullptr;
-	else if (parameters.size() == 0)
-		return nullptr; //FIND SOMETHING BETTER
-		
 	Node* node = new Node;
+
+	
 
 //Set the node's class	
 	if (classIndex >= 0)
-	{
-		
 		node->classe = examples[0][classIndex];
-	}
 	else
 		node->classe = "NoClass";
 	
-//Set the node's value (has a value only if it's group is pure)	
+	
+//Set the node's value (has a value only if it's group is pure or if no parameter is left)	
 	if (Entropy(examples) == 0)
 	{
 		node->value = examples[0][examples[0].size() - 1];
 		return node;	
 	}	
+	else if (parameters.size() == 0)
+	{
+		node->value = DominantClass(examples);
+		return node; 
+	}
 	else
 		node->value = "NoValue";
 		
 //Set the node's parameter
 	Children children = SelectBestParameter(examples, parameters, &node->parameter);
-	std::cout << "\n- - - - -NOVA ENTRADA- - - - -\n";
-	PrintSplit(children, 6);
-	
-	std::cout << "Parametro: " << node->parameter << "\n";
+
 	for (int i = 0; i < children.size(); i++)
-	{
-		//std::cout << "\nEntra em parametro " << node->parameter << " class " << children[i][0][node->parameter] << "\n";
 		node->children.push_back(GenerateTree (children[i], parameters, node->parameter));
-	}
 	
 	return node;
 }/* End of function: Generate Tree */
@@ -112,8 +80,7 @@ std::string DecisionTree::ClassifyExample (std::vector<std::string> example, Nod
 		int flag = 0;
 		int parameter = decisionTree->parameter;
 		for (int i = 0; i < decisionTree -> children.size(); i++)
-		{
-			//DEBUGstd::cout << "Ex: " << example[parameter] << " classe: " << decisionTree->children[i]->classe << "\n";
+		{	
 			if (example[parameter] == decisionTree->children[i]->classe)
 			{
 				decisionTree = decisionTree->children[i];
@@ -121,10 +88,8 @@ std::string DecisionTree::ClassifyExample (std::vector<std::string> example, Nod
 			}
 		}
 		if (!flag)
-		{
-			std::cout << "Error: The data cannot be represented by this tree\n";
 			return "Error";
-		}
+
 		value = decisionTree->value;
 	}
 
@@ -138,10 +103,16 @@ void DecisionTree::PrintTree(Node* root)
 {
 	if (root->value != "NoValue")
 	{
-		std::cout << root->value << "\n";
+		std::cout <<"    END - " << root->value << "\n";
 		return;
 	}
-	std::cout << "Class: " << root->classe << " - Parameter: " << root->parameter << "\n";
+	std::cout << "\nClass: " << root->classe << " - Parameter: " << root->parameter << "\n";
+	std::cout << "       ";
+	for (int i = 0; i < root->children.size(); i++)
+	{
+		std::cout << root->children[i]->classe << "  ";
+	}
+	std::cout << "\n\n";
 	for (int i = 0; i < root->children.size(); i++)
 	{
 		PrintTree(root->children[i]);
@@ -165,19 +136,14 @@ void DecisionTree::PrintTree(Node* root)
 ********/
 float DecisionTree::Entropy (Group leaf)
 {
-	int flag;
 	int leafSize = leaf.size();
 	int instanceSize = leaf[0].size();
 	std::vector<Instance> nInstances;
 	Instance instance;
 	
-	instance.name = leaf[0][instanceSize - 1];
-	instance.number = 1;
-	nInstances.push_back(instance);
-
-	for (int i = 1; i < leafSize ; i++)
+	for (int i = 0; i < leafSize ; i++)
 	{
-		flag = 0;
+		int flag = 0;
 		for (int j = 0; j < nInstances.size(); j++)
 		{
 			if (leaf[i][instanceSize - 1] == nInstances[j].name)
@@ -193,7 +159,6 @@ float DecisionTree::Entropy (Group leaf)
 			nInstances.push_back(instance);
 		}
 	}
-
 	float probability, sum = 0;
 	for (int i = 0; i < nInstances.size(); i++)
 	{
@@ -287,6 +252,49 @@ Children DecisionTree::SelectBestParameter(Group node, std::vector<int>& paramet
 	parameters.erase(parameters.begin() + bestParamIndex);
 	return bestChildren;
 }/* End of function: Select Best Parameter */
+
+/********
+	Function : Select Dominant Class
+
+	Description : Given a group of example returns the dominant class in it
+
+	Parameters : 
+		- leaf : A group of examples
+	
+	Return : A string with the name of the dominant class
+********/
+std::string DecisionTree::DominantClass(Group leaf)
+{
+	int instanceSize = leaf[0].size();
+	std::vector<Instance> nInstances;
+	Instance instance;
+
+	for (int i = 0; i < leaf.size() ; i++)
+	{
+		int flag = 0;
+		for (int j = 0; j < nInstances.size(); j++)
+		{
+			if (leaf[i][instanceSize - 1] == nInstances[j].name)
+			{
+				nInstances[j].number += 1;
+				flag = 1;
+			}
+		}
+		if (!flag)
+		{
+			instance.name = leaf[i][instanceSize - 1];
+			instance.number = 1;
+			nInstances.push_back(instance);
+		}
+	}
+	int bigest = 0;
+	for (int i = 0; i < nInstances.size(); i++)
+	{
+		if (nInstances[i].number > nInstances[bigest].number)
+			bigest = i;
+	}
+	return nInstances[bigest].name;
+}/* End of function: Select Dominant Class */
 
 /*****
 	Function : Print Split
