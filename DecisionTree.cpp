@@ -12,11 +12,11 @@
   //  tree = 
   //}
 //}
-#include <vector>
 #include <iostream>
 #include <sstream>
 #include <cmath>
 #include "ReadDataBase.h"
+#include "DecisionTree.h"
 
 typedef struct instance
 {
@@ -33,15 +33,6 @@ struct node {
 	std::vector<Node*> children;
 };
 
-typedef std::vector<std::vector<std::vector<std::string>>> Children;
-typedef std::vector<std::vector<std::string>> Group;
-
-float Entropy (Group leaf);
-Children Split (Group node, int parameter);
-void PrintSplit(Children split, int parameter);
-Children SelectBestParameter(Group node, std::vector<int>& parameters, int* usedParameter);
-Node* GenerateTree (Group exemples, std::vector<int> parameters, int classIndex);
-
 int main (void)
 {
 	std::string filePath = "car-2.data";
@@ -53,24 +44,22 @@ int main (void)
 
 	createDataSet.ReadFile (filePath);
 	createDataSet.get(dataSet);
-	int a = 1;
-	for (int i = dataSet.size() - 10; i < dataSet.size() ; i++)
-	{
+	for (int i = dataSet.size() - 10; i < dataSet.size() ; i++)	
 		auxDebug.push_back(dataSet[i]);
-		std::cout << "El: " << a << " " << dataSet[i][3] << "\n";
-		a++;
-	}
-	/*int parameter;
-	Children children = SelectBestParameter(auxDebug, parameters, &parameter);
-	PrintSplit(children, 6);
-	std::cout << "Used parameter: " << parameter << "\n";
-	*/
-	Node* node = GenerateTree (auxDebug, parameters, -1);
 
+	DecisionTree decisionTree;
+	std::cout << "CREATE TREE\n\n";
+	Node* root = decisionTree.GenerateTree (auxDebug, parameters, -1);
+	std::cout << "\n\nEXPLORE TREE\n\n";
+	decisionTree.PrintTree(root);
+	std::cout << "\n\nTEST TREE\n\n";
+	std::vector<std::string> example = dataSet[dataSet.size() - 13];
+	std::string res = decisionTree.ClassifyExample(example,root);
+	std::cout << "Result: " << res << "\n";
 	return 0;
 }
 
-float Entropy (Group leaf)
+float DecisionTree::Entropy (Group leaf)
 {
 	int flag;
 	int leafSize = leaf.size();
@@ -111,7 +100,7 @@ float Entropy (Group leaf)
 	return std::abs(sum);
 }
 
-Children Split (Group node, int parameter)
+Children DecisionTree::Split (Group node, int parameter)
 {
 	int flag;
 	int nodeSize = node.size();
@@ -140,17 +129,8 @@ Children Split (Group node, int parameter)
 	return children;
 }
 
-Children SelectBestParameter(Group node, std::vector<int>& parameters, int* usedParameter)
+Children DecisionTree::SelectBestParameter(Group node, std::vector<int>& parameters, int* usedParameter)
 {
-	//Para todos os parametros na lista fazer split
-	//Cacular a entropia de todos os filhos
-	//Adicionar a entropia
-	//Comparar com o melhor
-	//Se o atual for melhor do que o melhor
-		//O Children best passa a ser o atual
-		//O indice do melhor parametro passa  ser o atual
-	//Remove o melhor parametro da lista de parametros
-	//retorna o children
 	int bestParamIndex = 0;
 	Children bestChildren = Split(node, parameters[bestParamIndex]);
 
@@ -178,50 +158,49 @@ Children SelectBestParameter(Group node, std::vector<int>& parameters, int* used
 	return bestChildren;
 }
 
-Node* GenerateTree (Group exemples, std::vector<int> parameters, int classIndex)
+Node* DecisionTree::GenerateTree (Group examples, std::vector<int> parameters, int classIndex)
 {
-	if (exemples.size() == 0)
+	if (examples.size() == 0)
 		return nullptr;
 	else if (parameters.size() == 0)
 		return nullptr; //FIND SOMETHING BETTER
 		
 	Node* node = new Node;
-	
-	//Set the node's value (has a value only if it's group is pure)	
-	if (Entropy(exemples) == 0)
+
+//Set the node's class	
+	if (classIndex >= 0)
 	{
-		node->value = exemples[0][exemples[0].size() - 1];
-		std::cout << "Pure branch" << "\n";
+		
+		node->classe = examples[0][classIndex];
+	}
+	else
+		node->classe = "NoClass";
+	
+//Set the node's value (has a value only if it's group is pure)	
+	if (Entropy(examples) == 0)
+	{
+		node->value = examples[0][examples[0].size() - 1];
 		return node;	
 	}	
 	else
 		node->value = "NoValue";
-	
-//Set the node's class	
-	if (classIndex >= 0)
-		node->classe = exemples[0][classIndex];
-	else
-		node->classe = "NoClass";
-		
-	
-	
 		
 //Set the node's parameter
-	Children children = SelectBestParameter(exemples, parameters, &node->parameter);
+	Children children = SelectBestParameter(examples, parameters, &node->parameter);
 	std::cout << "\n- - - - -NOVA ENTRADA- - - - -\n";
 	PrintSplit(children, 6);
 	
 	std::cout << "Parametro: " << node->parameter << "\n";
 	for (int i = 0; i < children.size(); i++)
 	{
-		std::cout << "\nEntra em parametro " << node->parameter << " class " << children[i][0][node->parameter] << "\n";
-		node->children[i] = GenerateTree (children[i], parameters, node->parameter);
+		//std::cout << "\nEntra em parametro " << node->parameter << " class " << children[i][0][node->parameter] << "\n";
+		node->children.push_back(GenerateTree (children[i], parameters, node->parameter));
 	}
 	
 	return node;
 }
 
-void PrintSplit(Children split, int parameter)
+void DecisionTree::PrintSplit(Children split, int parameter)
 {
 	for (int i = 0; i < split.size(); i++)
 	{
@@ -231,4 +210,45 @@ void PrintSplit(Children split, int parameter)
 			std::cout << j << " - " << split[i][j][parameter] << "\n";
 		}
 	}
+}
+
+void DecisionTree::PrintTree(Node* root)
+{
+	if (root->value != "NoValue")
+	{
+		std::cout << root->value << "\n";
+		return;
+	}
+	std::cout << "Class: " << root->classe << " - Parameter: " << root->parameter << "\n";
+	for (int i = 0; i < root->children.size(); i++)
+	{
+		PrintTree(root->children[i]);
+	}
+}
+
+std::string DecisionTree::ClassifyExample (std::vector<std::string> example, Node* decisionTree)
+{
+	std::string value = decisionTree->value;
+	while (value == "NoValue")
+	{
+		int flag = 0;
+		int parameter = decisionTree->parameter;
+		for (int i = 0; i < decisionTree -> children.size(); i++)
+		{
+			//DEBUGstd::cout << "Ex: " << example[parameter] << " classe: " << decisionTree->children[i]->classe << "\n";
+			if (example[parameter] == decisionTree->children[i]->classe)
+			{
+				decisionTree = decisionTree->children[i];
+				flag = 1;
+			}
+		}
+		if (!flag)
+		{
+			std::cout << "Error: The data cannot be represented by this tree\n";
+			return "Error";
+		}
+		value = decisionTree->value;
+	}
+
+	return value;
 }
