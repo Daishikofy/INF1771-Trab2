@@ -4,7 +4,7 @@ Creator: Lola Magnard
 Description of the following code : 
 
 	The purpose of this code is reading the data from the UCI repository : Car evaluation
-	- An exemple is stored in a vector of string 
+	- An example is stored in a vector of string 
 	- Each vector contains 6 spaces corresponding to the 6 parameters
 	- The whole database is stored in a vector<vector<std::string>>
 

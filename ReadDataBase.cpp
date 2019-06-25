@@ -4,7 +4,7 @@ Creator: Lola Magnard
 Description of the following code : 
 
 	The purpose of this code is reading the data from the UCI repository : Car evaluation
-	- An exemple is stored in a vector of string 
+	- An example is stored in a vector of string 
 	- Each vector contains 6 spaces corresponding to the 6 parameters
 	- The whole database is stored in a vector<vector<std::string>>
 
@@ -44,13 +44,13 @@ void CreateDataSet::ReadFile (std::string filePath)
 		std::istringstream lineStream(line);
 		std::string token;
 
-		//Fill the exemple with all its attributes
+		//Fill the example with all its attributes
 		while(std::getline(lineStream, token, ',')) 
 		{
 			example.push_back(token);
 		}
 
-		//Add the exemple to the current dataSet
+		//Add the example to the current dataSet
 		_dataSet.push_back(example);
 		debug ++;
 	}
