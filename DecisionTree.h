@@ -48,7 +48,17 @@ public:
 			Node* is a pointer to the root of the decisionTree.
 	******/
 	std::string ClassifyExample (std::vector<std::string> example, Node* decisionTree);
+	
+	/********
+	Function : Delete Tree
 
+	Description : Free the nodes of the structur
+
+	Parameters : 
+		- root : Pointer to the root of the tree you want to destroy
+	********/
+	void Delete(Node* tree);
+	
 	/******
 		Function: Print Tree
 
@@ -64,6 +74,6 @@ private:
 	float Entropy (Group leaf);
 	Children Split (Group node, int parameter);
 	Children SelectBestParameter(Group node, std::vector<int>& parameters, int* usedParameter);
-	std::string DecisionTree::DominantClass(Group leaf);
+	std::string DominantClass(Group leaf);
 	void PrintSplit(Children split, int parameter);
 };

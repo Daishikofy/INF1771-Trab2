@@ -35,8 +35,18 @@ Node* DecisionTree::GenerateTree (Group examples, std::vector<int> parameters, i
 {
 	if (examples.size() == 0)
 		return nullptr;
-	Node* node = new Node;
-
+		
+	Node* node = nullptr;
+	
+	try
+	{
+		node = new Node ;
+	}
+	catch(std::bad_alloc)
+	{ 
+		std::cout << "Insufficiant memory\n";
+		return 0;
+	}
 	
 
 //Set the node's class	
@@ -95,6 +105,26 @@ std::string DecisionTree::ClassifyExample (std::vector<std::string> example, Nod
 
 	return value;
 }/* End of function : Classify example */
+
+/********
+	Function : Delete Tree
+********/
+void DecisionTree::Delete(Node* root)
+{
+	if (root->value != "NoValue")
+	{
+		delete root;
+		return;
+	}
+	
+	for (int i = 0; i < root->children.size(); i++)
+	{
+		Delete(root->children[i]);
+	}
+	
+	delete root;
+	return;
+}/* End of function: Delete */
 
 /*****
 	Function : Print Tree
@@ -165,7 +195,6 @@ float DecisionTree::Entropy (Group leaf)
 		probability = (float)nInstances[i].number/(float)leafSize;
 		sum += probability*std::log(probability);
 	}
-	
 	return std::abs(sum);
 }/* End of function: Entropy */
 
@@ -206,7 +235,6 @@ Children DecisionTree::Split (Group node, int parameter)
 			children.push_back(group);
 		}
 	}
-
 	return children;
 }/* End of function: Split */
 
@@ -296,9 +324,6 @@ std::string DecisionTree::DominantClass(Group leaf)
 	return nInstances[bigest].name;
 }/* End of function: Select Dominant Class */
 
-/*****
-	Function : Print Split
-*****/
 void DecisionTree::PrintSplit(Children split, int parameter)
 {
 	for (int i = 0; i < split.size(); i++)
